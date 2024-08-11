@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  updatedAt DateTime   @default(now())
+  createdAt DateTime   @default(now())
+  password  String
+  firstName String
+  lastName  String
+  lastLogin DateTime?  @map("last_login")
+  auditLogs AuditLog[]
+  role      Role
+}
+
+enum Role {
+  USER
+  AGENT
+  ADMIN
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  action    String
+  timestamp DateTime @default(now())
+  details   String
+}
+
+model Alert {
+  id              String        @id @default(uuid())
+  detectedEvent   DetectedEvent @relation(fields: [detectedEventId], references: [id])
+  detectedEventId String
+  generatedAt     DateTime      @map("generated_at")
+  alertType       String        @map("alert_type")
+  priority        Int
+  message         String
+  resolved        Boolean   @default(false)
+  resolvedAt      DateTime?     @map("resolved_at")
+}
+
+model Suspect {
+  id              String        @id @default(uuid())
+  detectedEvent   DetectedEvent @relation(fields: [detectedEventId], references: [id])
+  detectedEventId String
+  appearance      String
+  behavior        String
+  confidence      Float?
+  associatedItems String?        @map("associated_items")
+  firstCited      String?      @map("first_cited")
+  images          String?
+}
+
+model DetectedEvent {
+  id             String    @id @default(uuid())
+  video          Video     @relation(fields: [videoId], references: [id])
+  videoId        String
+  eventType      String    @map("event_type")
+  eventStartTime String  @map("event_start_time")
+  eventEndTime   String  @map("event_end_time")
+  description    String
+  severity       Int?
+  detectedBy     String?    @map("detected_by")
+  confidence     Float
+  status         String?
+  suspects       Suspect[]
+  alert          Alert[]
+}
+
+model Video {
+  id                   String    @id @default(uuid())
+  uploadedBy           String    @map("uploaded_by")
+  uploadDate           DateTime  @default(now()) @map("upload_date")
+  sourceLocation       String?   @map("source_location")
+  videoPath            String    @map("video_path")
+  duration             Int?
+  status               String?
+  resolution           String?
+  geminiCreateTime     DateTime? @map("gemini_create_time")
+  geminiUpdateTime     DateTime? @map("gemini_update_time")
+  geminiExpirationTime DateTime? @map("gemini_expiration_time")
+  mimeType             String?   @map("mime_type")
+  geminiState          String?   @map("gemini_state")
+  geminiUri            String?   @map("gemini_uri")
+  geminiDisplayName    String?   @map("gemini_display_name")
+  geminiSizeBytes      Int?      @map("gemini_size_bytes")
+  geminiName           String?   @map("gemini_name")
+  geminiMeta           Json?   @map("gemini_meta")
+  detectedEvents DetectedEvent[]
+}
